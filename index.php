@@ -1,7 +1,8 @@
 <?php
-// index.php
 require_once 'src/SequenceProcessor.php';
 require_once 'src/InputValidator.php';
+require_once 'src/export.php';
+
 
 $inputSequence = $_POST['sequence'] ?? '';
 $result = ['status' => 'idle', 'corrected' => [], 'dotNotation' => [], 'error' => ''];
@@ -56,11 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($inputSequence)) {
         <?php elseif ($result['status'] === 'success'): ?>
             <h2>Corrected Sequence</h2>
             <pre><?php echo htmlspecialchars(json_encode($result['dotNotation'], JSON_PRETTY_PRINT)); ?></pre>
+                <form method="POST" action="src/export.php">
+                    <?php foreach ($result['dotNotation'] as $sequence): ?>
+                        <input type="hidden" name="sequences[]" value="<?php echo htmlspecialchars($sequence); ?>">
+                    <?php endforeach; ?>
+                    <button type="submit">📥 Export to CSV</button>
+                </form>
             <canvas id="sequenceChart"></canvas>
         <?php endif; ?>
     </div>
 
     <?php if ($result['status'] === 'success'): ?>
+
     <script>
         const ctx = document.getElementById('sequenceChart').getContext('2d');
         const dotNotation = <?php echo json_encode($result['dotNotation']); ?>;
