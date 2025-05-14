@@ -113,15 +113,6 @@ A PHP-based web application that corrects missing numbers in hierarchical dot-se
 
 ---
 
-## 🔮 Future Improvements
-
-- 🔁 Make correction logic dynamic based on actual gaps
-- ⬇️ Add export to JSON/CSV
-- 🌈 Color-coded tree depth levels
-- 🧱 Add support for more complex nested structures
-
----
-
 ## 🧑‍💻 Author
 
 **Aditya Dixit**  
