@@ -1,21 +1,16 @@
 <?php
 class SequenceProcessor {
     /**
-     * Inputs sequence to match expected output
-     * @param string $inputSequence
-     * @return array
-     * @throws Exception
+     * Entry point: accepts string input and returns corrected sequence
      */
     public function correctSequence(string $inputSequence): array {
         $sequence = $this->parseSequence($inputSequence);
-        return $this->customCorrection($sequence);
+        $corrected = $this->fillMissing($sequence);
+        return $corrected;
     }
 
     /**
-     * Parses input string into array structure
-     * @param string $input
-     * @return array
-     * @throws Exception
+     * Parses the dot-separated string into a nested array
      */
     private function parseSequence(string $input): array {
         $numbers = array_map('trim', explode(',', $input));
@@ -27,86 +22,60 @@ class SequenceProcessor {
             }
 
             $parts = explode('.', $number);
-            $currentLevel = &$result;
+            $current = &$result;
 
-            // Traverse or create the nested structure
-            for ($i = 0; $i < count($parts) - 1; $i++) {
-                $index = (int)$parts[$i] - 1;
-                // Ensure the current level is an array
-                if (!isset($currentLevel[$index]) || !is_array($currentLevel[$index])) {
-                    $currentLevel[$index] = [];
+            foreach ($parts as $part) {
+                $index = (int)$part;
+                if (!isset($current[$index])) {
+                    $current[$index] = [];
                 }
-                $currentLevel = &$currentLevel[$index];
+                $current = &$current[$index];
             }
-
-            // Assign the final number
-            $currentLevel[] = (float)end($parts);
         }
 
         return $result;
     }
 
     /**
-     * Custom correction to match expected output
-     * @param array $sequence
-     * @return array
+     * Fills missing sibling keys sequentially where gaps are found
      */
-    private function customCorrection(array $sequence): array {
-        $corrected = [];
+    private function fillMissing(array $tree): array {
+        $filled = [];
 
-        // Process only the first top-level branch (1.x)
-        if (isset($sequence[0])) {
-            $corrected[0] = [
-                0 => 1, // 1.1
-                1 => [ // 1.2
-                    0 => [ // 1.2.1
-                        0 => 1, // 1.2.1.1
-                        1 => 2  // 1.2.1.2
-                    ],
-                    1 => [ // 1.2.2
-                        0 => 1, // 1.2.2.1
-                        1 => 2  // 1.2.2.2
-                    ]
-                ],
-                2 => 3, // 1.3
-                3 => [ // 1.4
-                    0 => 1, // 1.4.1
-                    1 => 2  // 1.4.2
-                ]
-            ];
+        if (!empty($tree)) {
+            $keys = array_keys($tree);
+            $min = min($keys);
+            $max = max($keys);
+
+            for ($i = $min; $i <= $max; $i++) {
+                if (isset($tree[$i])) {
+                    $filled[$i] = $this->fillMissing($tree[$i]);
+                } else {
+                    $filled[$i] = []; // Fill missing node
+                }
+            }
         }
 
-        return $corrected;
+        return $filled;
     }
 
     /**
-     * Converts corrected sequence back to dot notation
-     * @param array $sequence
-     * @param string $prefix
-     * @return array
+     * Converts the nested array structure back to dot notation
      */
     public function toDotNotation(array $sequence, string $prefix = ''): array {
         $result = [];
 
-        foreach ($sequence as $index => $item) {
-            $currentPrefix = $prefix ? "$prefix." . ($index + 1) : ''; // Skip top level
+        foreach ($sequence as $index => $subtree) {
+            $current = $prefix === '' ? "$index" : "$prefix.$index";
+            $result[] = $current;
 
-            // Skip root level (empty prefix means it's root)
-            if ($currentPrefix !== '') {
-                $result[] = $currentPrefix;
-            }
-
-            if (is_array($item)) {
-                $childResults = $this->toDotNotation($item, $currentPrefix ?: (string)($index + 1));
-                $result = array_merge($result, $childResults);
+            if (is_array($subtree) && !empty($subtree)) {
+                $child = $this->toDotNotation($subtree, $current);
+                $result = array_merge($result, $child);
             }
         }
 
         return $result;
     }
-
-
-
-
 }
 ?>
